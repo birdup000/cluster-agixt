@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cluster Coordinator</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container my-5">
+        <h1 class="mb-4">Cluster Coordinator</h1>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2>Execute a Task</h2>
+            </div>
+            <div class="card-body">
+                <form id="task-form">
+                    <div class="mb-3">
+                        <label for="task-function" class="form-label">Task Function:</label>
+                        <input type="text" class="form-control" id="task-function" name="task-function" value="lambda x: sum(x)">
+                    </div>
+                    <div class="mb-3">
+                        <label for="task-args" class="form-label">Task Arguments:</label>
+                        <input type="text" class="form-control" id="task-args" name="task-args" value="[[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Execute</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>Task Status</h2>
+            </div>
+            <div class="card-body">
+                <div id="task-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            function updateTaskStatus() {
+                $.ajax({
+                    url: '/get_task_status',
+                    type: 'GET',
+                    success: function(data) {
+                        var statusHtml = '';
+                        for (var node in data.node_tasks) {
+                            statusHtml += `<h3>Node: ${node}</h3>`;
+                            statusHtml += `<p>Agent: ${data.node_agents[node]}</p>`;
+                            statusHtml += `<p>Subtasks: ${data.node_tasks[node].length}</p>`;
+                        }
+                        $('#task-status').html(statusHtml);
+                    }
+                });
+            }
+            
+            $('#task-form').submit(function(event) {
+                event.preventDefault();
+                var taskFunction = $('#task-function').val();
+                var taskArgs = $('#task-args').val();
+                
+                $.ajax({
+                    url: '/execute_task',
+                    type: 'POST',
+                    data: {
+                        'task_function': taskFunction,
+                        'task_args': taskArgs
+                    },
+                    success: function(data) {
+                        alert(`Result: ${data.result.result}\nExecution time: ${data.execution_time.toFixed(2)} seconds`);
+                        updateTaskStatus();
+                    }
+                });
+            });
+            
+            setInterval(updateTaskStatus, 2000);
+        });
+    </script>
+</body>
+</html>
